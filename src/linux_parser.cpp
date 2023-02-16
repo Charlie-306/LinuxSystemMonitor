@@ -3,6 +3,8 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <filesystem>
+#include <iostream>
 
 #include "linux_parser.h"
 
@@ -24,6 +26,7 @@ string LinuxParser::OperatingSystem() {
       std::replace(line.begin(), line.end(), '"', ' ');
       std::istringstream linestream(line);
       while (linestream >> key >> value) {
+        std::cout << "key: " << key << ", value: " << value << std::endl;
         if (key == "PRETTY_NAME") {
           std::replace(value.begin(), value.end(), '_', ' ');
           return value;
@@ -48,22 +51,35 @@ string LinuxParser::Kernel() {
 }
 
 // BONUS: Update this to use std::filesystem
+//vector<int> LinuxParser::Pids() {
+//  vector<int> pids;
+//  DIR* directory = opendir(kProcDirectory.c_str());
+//  struct dirent* file;
+//  while ((file = readdir(directory)) != nullptr) {
+//    // Is this a directory?
+//    if (file->d_type == DT_DIR) {
+//      // Is every character of the name a digit?
+//      string filename(file->d_name);
+//      if (std::all_of(filename.begin(), filename.end(), isdigit)) {
+//        int pid = stoi(filename);
+//        pids.push_back(pid);
+//      }
+//    }
+//  }
+//  closedir(directory);
+//  return pids;
+//}
+
 vector<int> LinuxParser::Pids() {
   vector<int> pids;
-  DIR* directory = opendir(kProcDirectory.c_str());
-  struct dirent* file;
-  while ((file = readdir(directory)) != nullptr) {
-    // Is this a directory?
-    if (file->d_type == DT_DIR) {
-      // Is every character of the name a digit?
-      string filename(file->d_name);
-      if (std::all_of(filename.begin(), filename.end(), isdigit)) {
-        int pid = stoi(filename);
-        pids.push_back(pid);
-      }
+  for (auto const &one_path:std::filesystem::directory_iterator{kProcDirectory}){
+    string path_str = one_path.path().c_str();
+    if (one_path.is_directory() &&
+        std::all_of(path_str.begin(), path_str.end(), isdigit)){
+      int pid = stoi((std::string)one_path.path().filename());
+      pids.emplace_back(pid);
     }
   }
-  closedir(directory);
   return pids;
 }
 

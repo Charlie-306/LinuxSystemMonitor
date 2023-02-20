@@ -5,6 +5,7 @@
 #include <vector>
 #include <filesystem>
 #include <iostream>
+#include <unistd.h>
 
 #include "linux_parser.h"
 
@@ -13,7 +14,6 @@ using std::string;
 using std::to_string;
 using std::vector;
 
-// DONE: An example of how to read data from the filesystem
 string LinuxParser::OperatingSystem() {
   string line;
   string key;
@@ -26,7 +26,6 @@ string LinuxParser::OperatingSystem() {
       std::replace(line.begin(), line.end(), '"', ' ');
       std::istringstream linestream(line);
       while (linestream >> key >> value) {
-        std::cout << "key: " << key << ", value: " << value << std::endl;
         if (key == "PRETTY_NAME") {
           std::replace(value.begin(), value.end(), '_', ' ');
           return value;
@@ -37,7 +36,6 @@ string LinuxParser::OperatingSystem() {
   return value;
 }
 
-// DONE: An example of how to read data from the filesystem
 string LinuxParser::Kernel() {
   string os, kernel, version;
   string line;
@@ -50,32 +48,13 @@ string LinuxParser::Kernel() {
   return kernel;
 }
 
-// BONUS: Update this to use std::filesystem
-//vector<int> LinuxParser::Pids() {
-//  vector<int> pids;
-//  DIR* directory = opendir(kProcDirectory.c_str());
-//  struct dirent* file;
-//  while ((file = readdir(directory)) != nullptr) {
-//    // Is this a directory?
-//    if (file->d_type == DT_DIR) {
-//      // Is every character of the name a digit?
-//      string filename(file->d_name);
-//      if (std::all_of(filename.begin(), filename.end(), isdigit)) {
-//        int pid = stoi(filename);
-//        pids.push_back(pid);
-//      }
-//    }
-//  }
-//  closedir(directory);
-//  return pids;
-//}
-
 vector<int> LinuxParser::Pids() {
   vector<int> pids;
   for (auto const &one_path:std::filesystem::directory_iterator{kProcDirectory}){
     string path_str = one_path.path().c_str();
+    string folder_str = one_path.path().filename().c_str();
     if (one_path.is_directory() &&
-        std::all_of(path_str.begin(), path_str.end(), isdigit)){
+        std::all_of(folder_str.begin(), folder_str.end(), isdigit)){
       int pid = stoi((std::string)one_path.path().filename());
       pids.emplace_back(pid);
     }
@@ -87,7 +66,12 @@ vector<int> LinuxParser::Pids() {
 float LinuxParser::MemoryUtilization() { return 0.0; }
 
 // TODO: Read and return the system uptime
-long LinuxParser::UpTime() { return 0; }
+long LinuxParser::UpTime() {
+  std::ifstream stream(kProcDirectory + kUptimeFilename);
+  string line;
+  std::getline(stream, line);
+  return stoi(matchOnePattern(line, std::regex(R"(([\w.]+)\s)")));
+}
 
 // TODO: Read and return the number of jiffies for the system
 long LinuxParser::Jiffies() { return 0; }
@@ -111,22 +95,99 @@ int LinuxParser::TotalProcesses() { return 0; }
 // TODO: Read and return the number of running processes
 int LinuxParser::RunningProcesses() { return 0; }
 
-// TODO: Read and return the command associated with a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Command(int pid[[maybe_unused]]) { return string(); }
+string LinuxParser::Command(int pid) {
+  std::ifstream stream(LinuxParser::kProcDirectory +
+                       to_string(pid) +
+                       LinuxParser::kCmdlineFilename);
+  string line;
+  std::getline(stream, line);
+  return line;
+}
 
-// TODO: Read and return the memory used by a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Ram(int pid[[maybe_unused]]) { return string(); }
+string LinuxParser::Ram(int pid) {
+  std::ifstream stream(LinuxParser::kProcDirectory +
+                       to_string(pid) +
+                       LinuxParser::kStatusFilename);
+  std::regex pattern(R"(VmSize:\s+?(\d+)\s)");
+  auto ram_num = stod(matchOnePattern(stream, pattern)) / 1024;
+  std::ostringstream oss;
+  oss.precision(2);
+  oss << std::fixed << ram_num;
+  string result = oss.str();
+  return result;
+}
 
-// TODO: Read and return the user ID associated with a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::Uid(int pid[[maybe_unused]]) { return string(); }
+string LinuxParser::Uid(int pid) {
+  std::ifstream stream(LinuxParser::kProcDirectory +
+                         to_string(pid) +
+                         LinuxParser::kStatusFilename);
+  std::regex pattern(R"(Uid:\s+?(\w+)\s)");
+  return matchOnePattern(stream, pattern);
+}
 
-// TODO: Read and return the user associated with a process
-// REMOVE: [[maybe_unused]] once you define the function
-string LinuxParser::User(int pid[[maybe_unused]]) { return string(); }
+string LinuxParser::User(int pid){
+  std::ifstream stream_usr(LinuxParser::kPasswordPath);
+  std::regex user_pt(R"((^\w+):x:)" + Uid(pid));
+  return matchOnePattern(stream_usr, user_pt);
+}
 
-// TODO: Read and return the uptime of a process
-// REMOVE: [[maybe_unused]] once you define the function
-long LinuxParser::UpTime(int pid[[maybe_unused]]) { return 0; }
+long LinuxParser::UpTime(int pid) {
+  return starttime(pid) / sysconf(_SC_CLK_TCK);
+}
+
+string LinuxParser::matchOnePattern(const std::string& src, const std::regex& pattern){
+  std::smatch result;
+  std::regex_search(src, result, pattern);
+  return result[1];
+}
+
+string LinuxParser::matchOnePattern(std::ifstream &stream, const std::regex& pattern){
+  string line;
+  std::smatch result;
+  while(std::getline(stream, line)){
+    if(std::regex_search(line, pattern)){
+      std::regex_search(line, result, pattern);
+      break;
+    }
+  }
+  return result[1];
+}
+
+string LinuxParser::ProcessStat(int pid){
+  std::ifstream stream(kProcDirectory + to_string(pid) +
+                       kStatFilename);
+  string line;
+  std::getline(stream, line);
+  return line;
+}
+
+float LinuxParser::CpuUtilization(int pid) {
+  float total_time = utime(pid) + stime(pid) + cutime(pid) + cstime(pid);
+  float seconds = UpTime() - UpTime(pid);
+  return ((total_time / sysconf(_SC_CLK_TCK)) / seconds);
+}
+
+int LinuxParser::utime(int pid){
+  return stoi(matchOnePattern(ProcessStat(pid),
+                              std::regex(R"((?:[^\s]+\s){13}(\w+))")));
+}
+
+int LinuxParser::stime(int pid){
+  return stoi(matchOnePattern(ProcessStat(pid),
+                              std::regex(R"((?:[^\s]+\s){14}(\w+))")));
+}
+
+int LinuxParser::cutime(int pid){
+  return stoi(matchOnePattern(ProcessStat(pid),
+                              std::regex(R"((?:[^\s]+\s){15}(\w+))")));
+}
+
+int LinuxParser::cstime(int pid){
+  return stoi(matchOnePattern(ProcessStat(pid),
+                              std::regex(R"((?:[^\s]+\s){16}(\w+))")));
+}
+
+int LinuxParser::starttime(int pid){
+  return stoi(matchOnePattern(ProcessStat(pid),
+                              std::regex(R"((?:[^\s]+\s){21}(\w+))")));
+}

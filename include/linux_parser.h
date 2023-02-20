@@ -51,7 +51,16 @@ std::string Command(int pid);
 std::string Ram(int pid);
 std::string Uid(int pid);
 std::string User(int pid);
-long int UpTime(int pid);
+std::string ProcessStat(int pid);
+std::string matchOnePattern(const std::string& src, const std::regex& pattern);
+std::string matchOnePattern(std::ifstream &stream, const std::regex& pattern);
+long UpTime(int pid);
+float CpuUtilization(int pid);
+int utime(int pid);
+int stime(int pid);
+int cutime(int pid);
+int cstime(int pid);
+int starttime(int pid);
 };  // namespace LinuxParser
 
 #endif

@@ -3,6 +3,7 @@
 #include <set>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include "process.h"
 #include "processor.h"
@@ -21,7 +22,13 @@ You need to properly format the uptime. Refer to the comments mentioned in forma
 Processor& System::Cpu() { return cpu_; }
 
 // TODO: Return a container composed of the system's processes
-vector<Process>& System::Processes() { return processes_; }
+vector<Process>& System::Processes() {
+  processes_.clear();
+  for(auto const& pid:LinuxParser::Pids()){
+    processes_.emplace_back(Process(pid));
+  }
+  return processes_;
+}
 
 // TODO: Return the system's kernel identifier (string)
 std::string System::Kernel() { return LinuxParser::Kernel(); }
@@ -39,4 +46,4 @@ int System::RunningProcesses() { return 0; }
 int System::TotalProcesses() { return 0; }
 
 // TODO: Return the number of seconds since the system started running
-long int System::UpTime() { return 0; }
+long int System::UpTime() { return LinuxParser::UpTime(); }

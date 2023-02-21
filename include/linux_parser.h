@@ -46,10 +46,6 @@ std::vector<std::string> getCpuNames();
 std::vector<int> getCpuInfo(const std::string& cpu_name);
 float CpuUtilization(std::vector<int> &crtInfo,
                      std::vector<int> &prevInfo);
-long Jiffies();
-long ActiveJiffies();
-long ActiveJiffies(int pid);
-long IdleJiffies();
 
 // Processes
 std::string Command(int pid);

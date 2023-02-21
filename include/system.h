@@ -11,12 +11,12 @@ class System {
  public:
   std::vector<Processor>& Cpu();
   std::vector<Process>& Processes();
-  float MemoryUtilization();
-  long UpTime();
-  int TotalProcesses();
-  int RunningProcesses();
-  std::string Kernel();
-  std::string OperatingSystem();
+  static float MemoryUtilization();
+  static long UpTime();
+  static int TotalProcesses();
+  static int RunningProcesses();
+  static std::string Kernel();
+  static std::string OperatingSystem();
 
  private:
   std::vector<Processor> cpus_ = {};

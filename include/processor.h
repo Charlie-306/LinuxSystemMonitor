@@ -4,18 +4,19 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 
 
 class Processor {
  public:
-  Processor(std::string name);
-  std::string Name() const;
-  float Utilization();  // TODO: See src/processor.cpp
+  Processor();
+  explicit Processor(std::string name);
+  [[nodiscard]] std::string Name() const;
+  float Utilization();
 
-  // TODO: Declare any necessary private members
  private:
   std::string name_;
-  std::vector<int> *preInfo;
+  std::shared_ptr<std::vector<int>> preInfo;
 };
 
 #endif

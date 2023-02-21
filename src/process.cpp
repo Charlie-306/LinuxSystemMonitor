@@ -1,12 +1,6 @@
-#include <unistd.h>
-#include <cctype>
-#include <sstream>
+
 #include <string>
 #include <vector>
-#include <unistd.h>
-#include <iostream>
-#include <iomanip>
-#include <cmath>
 
 #include "process.h"
 #include "linux_parser.h"
@@ -21,26 +15,26 @@ Process::Process(): pid_(0){}
 
 int Process::Pid() const { return pid_; }
 
-float Process::CpuUtilization() {
+float Process::CpuUtilization() const {
   return LinuxParser::CpuUtilization(Pid());
 }
 
-string Process::Command() {
+string Process::Command() const {
   return LinuxParser::Command(Pid());
 }
 
-string Process::Ram() {
+string Process::Ram() const {
   return LinuxParser::Ram(Pid());
 }
 
-string Process::User() {
+string Process::User() const {
   return LinuxParser::User(Pid());
 }
 
-long int Process::UpTime() {
+long int Process::UpTime() const {
   return LinuxParser::UpTime(Pid());
 }
 
-// TODO: Overload the "less than" comparison operator for Process objects
-// REMOVE: [[maybe_unused]] once you define the function
-bool Process::operator<(Process const& a[[maybe_unused]]) const { return true; }
+bool Process::operator<(Process const& a) const {
+  return this->CpuUtilization() > a.CpuUtilization();
+}

@@ -1,10 +1,15 @@
 #include "processor.h"
 #include "linux_parser.h"
 
-#include <iostream>
+#include <utility>
 
-Processor::Processor(std::string name): name_(name){
-  preInfo = new std::vector<int>(10, 0);
+
+Processor::Processor(){
+  preInfo = std::make_shared<std::vector<int>>(10, 0);
+}
+
+Processor::Processor(std::string name): name_(std::move(name)){
+  preInfo = std::make_unique<std::vector<int>>(10, 0);
 }
 
 std::string Processor::Name() const{
@@ -12,9 +17,7 @@ std::string Processor::Name() const{
 }
 
 float Processor::Utilization() {
-//  for(auto ele:preInfo) std::cout << ele << std::endl;
   auto crtInfo = LinuxParser::getCpuInfo(Name());
-//  for(auto ele:crtInfo) std::cout << ele << std::endl;
 
   auto cpu_util = LinuxParser::CpuUtilization(crtInfo, (*preInfo));
   *preInfo = crtInfo;

@@ -1,11 +1,7 @@
-#include <dirent.h>
 #include <unistd.h>
-#include <sstream>
 #include <string>
 #include <vector>
 #include <filesystem>
-#include <iostream>
-#include <unistd.h>
 
 #include "linux_parser.h"
 
@@ -63,8 +59,17 @@ vector<int> LinuxParser::Pids() {
   return pids;
 }
 
-// TODO: Read and return the system memory utilization
-float LinuxParser::MemoryUtilization() { return 0.0; }
+float LinuxParser::MemoryUtilization() {
+  std::ifstream stream(kProcDirectory + kMeminfoFilename);
+  string line;
+  std::getline(stream, line);
+  int memTotal = stoi(matchOnePattern(line,
+                                      std::regex(R"(MemTotal:\s+(.*)\s)")));
+  std::getline(stream, line);
+  int memFree = stoi(matchOnePattern(line,
+                                     std::regex(R"(MemFree:\s+(.*)\s)")));
+  return (memTotal - memFree) / (float)memTotal;
+}
 
 long LinuxParser::UpTime() {
   std::ifstream stream(kProcDirectory + kUptimeFilename);
@@ -104,11 +109,11 @@ vector<int> LinuxParser::getCpuInfo(const string& cpu_name){
 }
 
 float LinuxParser::getIdle(vector<int> &cpuInfo){
-  return cpuInfo[CPUStates::kIdle_] + cpuInfo[CPUStates::kIOwait_];
+  return (float)cpuInfo[CPUStates::kIdle_] + cpuInfo[CPUStates::kIOwait_];
 }
 
 float LinuxParser::getNonIdle(std::vector<int> &cpuInfo){
-  return cpuInfo[CPUStates::kUser_] + cpuInfo[CPUStates::kNice_] +
+  return (float)cpuInfo[CPUStates::kUser_] + cpuInfo[CPUStates::kNice_] +
          cpuInfo[CPUStates::kSystem_] + cpuInfo[CPUStates::kIRQ_] +
          cpuInfo[CPUStates::kSoftIRQ_] + cpuInfo[CPUStates::kSteal_];
 }
@@ -125,14 +130,19 @@ float LinuxParser::CpuUtilization(std::vector<int> &crtInfo,
   auto total_d = Total - prevTotal;
   auto idle_d = Idle - prevIdle;
   return (total_d - idle_d) / total_d;
-//  return (Total - Idle) / Total;
 }
 
-// TODO: Read and return the total number of processes
-int LinuxParser::TotalProcesses() { return 0; }
+int LinuxParser::TotalProcesses() {
+  std::ifstream stream(kProcDirectory + kStatFilename);
+  return stoi(matchOnePattern(stream,
+                              std::regex(R"(processes\s(\w+))")));
+}
 
-// TODO: Read and return the number of running processes
-int LinuxParser::RunningProcesses() { return 0; }
+int LinuxParser::RunningProcesses() {
+  std::ifstream stream(kProcDirectory + kStatFilename);
+  return stoi(matchOnePattern(stream,
+                              std::regex(R"(procs_running\s(\w+))")));
+}
 
 string LinuxParser::Command(int pid) {
   std::ifstream stream(LinuxParser::kProcDirectory +
@@ -201,8 +211,8 @@ string LinuxParser::ProcessStat(int pid){
 }
 
 float LinuxParser::CpuUtilization(int pid) {
-  float total_time = utime(pid) + stime(pid) + cutime(pid) + cstime(pid);
-  float seconds = UpTime() - UpTime(pid);
+  float total_time = (float)utime(pid) + stime(pid) + cutime(pid) + cstime(pid);
+  float seconds = (float)UpTime() - UpTime(pid);
   return ((total_time / sysconf(_SC_CLK_TCK)) / seconds);
 }
 

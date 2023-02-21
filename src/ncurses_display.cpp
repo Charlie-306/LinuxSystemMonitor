@@ -43,11 +43,6 @@ void NCursesDisplay::DisplaySystem(System& system, WINDOW* window) {
   mvwprintw(window, ++row, 2, ("OS: " + system.OperatingSystem()).c_str());
   mvwprintw(window, ++row, 2, ("Kernel: " + system.Kernel()).c_str());
   DisplayCpu(system, window, row);
-//  mvwprintw(window, ++row, 2, "CPU: ");
-//  wattron(window, COLOR_PAIR(1));
-//  mvwprintw(window, row, 10, "");
-//  wprintw(window, ProgressBar(system.Cpu().Utilization()).c_str());
-//  wattroff(window, COLOR_PAIR(1));
   mvwprintw(window, ++row, 2, "Memory: ");
   wattron(window, COLOR_PAIR(1));
   mvwprintw(window, row, 10, "");
@@ -80,6 +75,7 @@ void NCursesDisplay::DisplayProcesses(std::vector<Process>& processes,
   mvwprintw(window, row, time_column, "TIME+");
   mvwprintw(window, row, command_column, "COMMAND");
   wattroff(window, COLOR_PAIR(2));
+  std::sort(processes.begin(), processes.end());
   for (int i = 0; i < processes.size(); ++i) {
     mvwprintw(window, ++row, pid_column, (string(window->_maxx-2, ' ').c_str()));
     

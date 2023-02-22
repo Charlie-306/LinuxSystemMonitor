@@ -17,6 +17,7 @@ class Process {
   Process();
  private:
   int pid_;
+  float cpu_util_;
 };
 
 #endif

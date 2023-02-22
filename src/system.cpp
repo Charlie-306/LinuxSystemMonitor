@@ -25,7 +25,7 @@ vector<Processor>& System::Cpu(){
 vector<Process>& System::Processes() {
   processes_.clear();
   for(auto const& pid:LinuxParser::Pids()){
-    processes_.emplace_back(pid);
+    if(LinuxParser::ProcessAlive(pid))processes_.emplace_back(pid);
   }
   return processes_;
 }

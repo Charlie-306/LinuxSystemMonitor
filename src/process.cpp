@@ -10,13 +10,14 @@ using std::to_string;
 using std::vector;
 
 
-Process::Process(int pid): pid_(pid){}
-Process::Process(): pid_(0){}
+Process::Process(int pid): pid_(pid),
+                            cpu_util_(LinuxParser::CpuUtilization(pid)){}
+Process::Process(): pid_(0), cpu_util_(.0){}
 
 int Process::Pid() const { return pid_; }
 
 float Process::CpuUtilization() const {
-  return LinuxParser::CpuUtilization(Pid());
+  return cpu_util_;
 }
 
 string Process::Command() const {

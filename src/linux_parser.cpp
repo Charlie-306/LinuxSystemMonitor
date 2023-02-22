@@ -187,7 +187,7 @@ long LinuxParser::UpTime(int pid) {
 string LinuxParser::matchOnePattern(const std::string& src, const std::regex& pattern){
   std::smatch result;
   std::regex_search(src, result, pattern);
-  return result[1];
+  return result[1].matched ? result[1].str(): "0";
 }
 
 string LinuxParser::matchOnePattern(std::ifstream &stream, const std::regex& pattern){
@@ -199,7 +199,7 @@ string LinuxParser::matchOnePattern(std::ifstream &stream, const std::regex& pat
       break;
     }
   }
-  return result[1];
+  return result[1].matched ? result[1].str(): "0";
 }
 
 string LinuxParser::ProcessStat(int pid){
@@ -214,6 +214,10 @@ float LinuxParser::CpuUtilization(int pid) {
   float total_time = (float)utime(pid) + stime(pid) + cutime(pid) + cstime(pid);
   float seconds = (float)UpTime() - UpTime(pid);
   return ((total_time / sysconf(_SC_CLK_TCK)) / seconds);
+}
+
+bool LinuxParser::ProcessAlive(int pid){
+  return CpuUtilization(pid) > .0;
 }
 
 int LinuxParser::utime(int pid){

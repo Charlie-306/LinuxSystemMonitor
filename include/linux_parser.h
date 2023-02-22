@@ -62,6 +62,7 @@ int stime(int pid);
 int cutime(int pid);
 int cstime(int pid);
 int starttime(int pid);
+bool ProcessAlive(int pid);
 };  // namespace LinuxParser
 
 #endif

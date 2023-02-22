@@ -177,7 +177,8 @@ string LinuxParser::Uid(int pid) {
 string LinuxParser::User(int pid){
   std::ifstream stream_usr(LinuxParser::kPasswordPath);
   std::regex user_pt(R"((^\w+):x:)" + Uid(pid));
-  return matchOnePattern(stream_usr, user_pt);
+  std::string user = matchOnePattern(stream_usr, user_pt);
+  return user == "0"? "unknown": user;
 }
 
 long LinuxParser::UpTime(int pid) {
@@ -187,7 +188,7 @@ long LinuxParser::UpTime(int pid) {
 string LinuxParser::matchOnePattern(const std::string& src, const std::regex& pattern){
   std::smatch result;
   std::regex_search(src, result, pattern);
-  return result[1].matched ? result[1].str(): "0";
+  return (!result.empty() && result[1].matched) ? result[1].str(): "0";
 }
 
 string LinuxParser::matchOnePattern(std::ifstream &stream, const std::regex& pattern){
@@ -199,7 +200,7 @@ string LinuxParser::matchOnePattern(std::ifstream &stream, const std::regex& pat
       break;
     }
   }
-  return result[1].matched ? result[1].str(): "0";
+  return (!result.empty() && result[1].matched) ? result[1].str(): "0";
 }
 
 string LinuxParser::ProcessStat(int pid){
